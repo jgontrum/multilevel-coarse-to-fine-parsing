@@ -13,8 +13,9 @@ A detailed investigation of this procedure can be found here:
 https://github.com/jgontrum/cky-parser-optimization
 """
 
-class PCFG():
 
+class PCFG:
+    
     def __init__(self, start_symbol="S"):
         # '0' is reserved for the sparse matrix.
         self.word_to_id = {"DUMMY": 0}
