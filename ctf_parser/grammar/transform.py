@@ -3,6 +3,7 @@ import math
 from collections import defaultdict
 
 import yaml
+
 from ctf_parser import logger
 from ctf_parser.grammar.pcfg import PCFG
 from ctf_parser.parser.ctf_mapper import CtfMapper
@@ -45,10 +46,10 @@ def transform(pcfg, mapping, level=2):
 
                 transformed_rules[lhs_t].append((lhs_t, rhs1_t, rhs2_t, prob_t))
 
-                logger.debug(
-                    f"Replace rule: "
-                    f"{symbol(lhs)} -> {symbol(rhs1)} {symbol(rhs2)} [{prob}] "
-                    f"=> {lhs_t} -> {rhs1_t} {rhs2_t} [{prob_t}]")
+                # logger.debug(
+                #     f"Replace rule: "
+                #     f"{symbol(lhs)} -> {symbol(rhs1)} {symbol(rhs2)} [{prob}] "
+                #     f"=> {lhs_t} -> {rhs1_t} {rhs2_t} [{prob_t}]")
 
             elif len(rule) == 3:
                 lhs, rhs1, prob = rule
@@ -59,10 +60,10 @@ def transform(pcfg, mapping, level=2):
 
                 transformed_rules[lhs_t].append((lhs_t, rhs1_t, prob_t))
 
-                logger.debug(
-                    f"Replace rule: "
-                    f"{symbol(lhs)} -> {symbol(rhs1)} [{prob}] => "
-                    f"{lhs_t} -> {rhs1_t} [{prob_t}]")
+                # logger.debug(
+                #     f"Replace rule: "
+                #     f"{symbol(lhs)} -> {symbol(rhs1)} [{prob}] => "
+                #     f"{lhs_t} -> {rhs1_t} [{prob_t}]")
 
     """
     Normalize rules:
