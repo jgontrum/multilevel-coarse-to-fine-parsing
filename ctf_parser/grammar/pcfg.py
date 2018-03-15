@@ -15,7 +15,7 @@ https://github.com/jgontrum/cky-parser-optimization
 
 
 class PCFG:
-    
+
     def __init__(self, start_symbol="S"):
         # '0' is reserved for the sparse matrix.
         self.word_to_id = {"DUMMY": 0}
@@ -92,9 +92,7 @@ class PCFG:
         # before any terminals, so that the range of their ids starts at 0
         # and is continous.
         # This is important for an efficient matrix construction.
-        for line in model:
-            data = loads(line)
-
+        for data in model:
             if data[0] != "Q2":
                 non_binary_rules_cache.append(data)
                 continue
@@ -136,7 +134,7 @@ class PCFG:
             rhs = [self.__add_to_signature(sym) for sym in rhs_raw]
 
             self.terminals.add(rhs[0])
-            item = (lhs, math.log(prob))
+            item = (lhs, rhs[0], math.log(prob))
 
             lhs_id = self.rhs_to_lhs_cache.get(tuple(rhs))
             if lhs_id is None:
@@ -151,3 +149,24 @@ class PCFG:
         self.__add_to_signature("_RARE_")
 
         self.__build_caches()
+
+
+class PCFGRule:
+
+    # TODO use this
+    def __init__(self, lhs, rhs, probability=1.0, signature=None):
+        self.signature = lambda x: x if signature is None else signature
+        self.rhs = rhs
+        self.lhs = lhs
+        self.probability = probability
+
+    def get_string_rule(self):
+        return PCFGRule(
+            self.signature(self.lhs),
+            [self.signature(s) for s in self.rhs],
+            self.probability
+        )
+
+    def __repr__(self):
+        return f"{self.signature(self.lhs)} -> " \
+               f"{[self.signature(s) for s in self.rhs]} [{self.probability}]"

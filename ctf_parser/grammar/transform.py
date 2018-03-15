@@ -1,7 +1,8 @@
 import math
 from collections import defaultdict
 
-from pcfg_parser.parser.pcfg import PCFG
+from ctf_parser import logger
+from ctf_parser.grammar.pcfg import PCFG
 
 
 def transform(pcfg, mapping, level=2):
@@ -16,12 +17,12 @@ def transform(pcfg, mapping, level=2):
     """
     transformed_rules = defaultdict(list)
 
-    for i, rules in enumerate(pcfg.id_to_lhs):
-        lhs_t = fine_to_coarse.get(symbol(i), symbol(i))
+    for lhs, rules in enumerate(pcfg.id_to_lhs):
+        lhs_t = fine_to_coarse.get(symbol(lhs), symbol(lhs))
 
         for rule in rules:
             if len(rule) == 4:
-                lhs, rhs1, rhs2, prob = rule
+                _, rhs1, rhs2, prob = rule
 
                 rhs1_t = fine_to_coarse.get(symbol(rhs1), symbol(rhs1))
                 rhs2_t = fine_to_coarse.get(symbol(rhs2), symbol(rhs2))
@@ -29,17 +30,23 @@ def transform(pcfg, mapping, level=2):
 
                 transformed_rules[lhs_t].append((lhs_t, rhs1_t, rhs2_t, prob_t))
 
-                # print(
-                #     f"{symbol(lhs)} => {symbol(rhs1)} {symbol(rhs2)} [{prob}]")
-                # print(f"{lhs_t} => {rhs1_t} {rhs2_t} [{prob_t}]")
+                logger.debug(
+                    f"Replace rule: "
+                    f"{symbol(lhs)} -> {symbol(rhs1)} {symbol(rhs2)} [{prob}] "
+                    f"=> {lhs_t} -> {rhs1_t} {rhs2_t} [{prob_t}]")
 
-            elif len(rule) == 2:
-                rhs1, prob = rule
+            elif len(rule) == 3:
+                _, rhs1, prob = rule
 
-                rhs1_t = fine_to_coarse.get(symbol(rhs1), symbol(rhs1))
+                rhs1_t = symbol(rhs1)
                 prob_t = math.pow(math.e, prob)
 
                 transformed_rules[lhs_t].append((lhs_t, rhs1_t, prob_t))
+
+                logger.debug(
+                    f"Replace rule: "
+                    f"{symbol(lhs)} -> {symbol(rhs1)} [{prob}] => "
+                    f"{lhs_t} -> {rhs1_t} [{prob_t}]")
 
     """
     Normalize rules:
@@ -59,8 +66,6 @@ def transform(pcfg, mapping, level=2):
                 rhs = (rule[1], rule[2])
             elif len(rule) == 3:
                 rhs = (rule[1],)
-            else:
-                raise ValueError("Bad rule.")
 
             prob = rule[-1]
             rhs_to_prob[rhs] = prob
@@ -82,12 +87,14 @@ def transform(pcfg, mapping, level=2):
     as the latest.
     """
     final_rules = sorted(final_rules, key=lambda x: x[0])
-    final_rules.append(["WORDS", list(words)])
+    final_rules.append(["WORDS", list(sorted(words))])
 
     return final_rules
 
 
 def transform_to_new_grammar(pcfg, mapping, level=2):
     new_pcfg = PCFG()
-    new_pcfg.load_model(transform(pcfg, mapping, level))
+    new_grammar = transform(pcfg, mapping, level)
+    print(new_grammar)
+    new_pcfg.load_model(new_grammar)
     return new_pcfg
