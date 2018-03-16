@@ -6,6 +6,10 @@ from ctf_parser.parser.cky_parser import CKYParser
 
 
 class InsideOutsideCalculator:
+    """
+    Implementation from Manning & Schütze: Foundations of Statistical
+    Natural Language Processing, p. 392 - 396
+    """
 
     def __init__(self, chart, pcfg):
         self.inside_cache = {}
@@ -29,14 +33,9 @@ class InsideOutsideCalculator:
         :return:
         """
 
-        # self.logger.info(f"Outside for: {self.pcfg.get_word_for_id(symbol)} "
-        #                     f"from {p} to {q}...")
-
         # Try to read from cache
         cache = self.outside_cache.get((symbol, start, end))
         if cache is not None:
-            # self.logger.info(f"Outside for {self.pcfg.get_word_for_id(symbol)} "
-            #                  f"from {p} to {q} is {cache} [CACHE]")
             return cache
 
         # Base case
@@ -53,18 +52,11 @@ class InsideOutsideCalculator:
 
         # Right
         for e in range(end + 1, len(self.chart)):
-            # self.logger.warning(f"R p={p} q={q} e={e}")
             for rule in self.pcfg.rhs1_to_rule.get(symbol, []):
                 lhs = rule[0]
                 rhs_2 = rule[2]
 
                 rule_prob = self.probability_inverse(rule[3])
-
-                # self.logger.warning(
-                #     f"RULE: {self.pcfg.get_word_for_id(rule[0])} -> "
-                #     f"{self.pcfg.get_word_for_id(rule[1])} "
-                #     f"{self.pcfg.get_word_for_id(rule[2])}"
-                #     f" [{self.probability_inverse(rule[3])}]")
 
                 outside = self.outside(lhs, start, e)
                 inside = self.inside(rhs_2, end + 1, e)
@@ -72,16 +64,9 @@ class InsideOutsideCalculator:
 
         # Left
         for e in range(0, start):
-            # self.logger.warning(f"L p={p} q={q} e={e}")
             for rule in self.pcfg.rhs2_to_rule.get(symbol, []):
                 lhs = rule[0]
                 rhs_1 = rule[1]
-
-                # self.logger.warning(
-                #     f"RULE: {self.pcfg.get_word_for_id(rule[0])} -> "
-                #     f"{self.pcfg.get_word_for_id(rule[1])} "
-                #     f"{self.pcfg.get_word_for_id(rule[2])}"
-                #     f" [{self.probability_inverse(rule[3])}]")
 
                 rule_prob = self.probability_inverse(rule[3])
 
@@ -90,9 +75,6 @@ class InsideOutsideCalculator:
                 score += rule_prob * outside * inside
 
         self.outside_cache[(symbol, start, end)] = score
-        #
-        # self.logger.info(f"Outside for {self.pcfg.get_word_for_id(symbol)} "
-        #                  f"from {p} to {q} is {score}")
 
         return score
 
@@ -104,14 +86,10 @@ class InsideOutsideCalculator:
         :param end: q
         :return:
         """
-        # self.logger.info(f"Inside for: {self.pcfg.get_word_for_id(symbol)} "
-        #                  f"from {start} to {end}...")
 
         # Try to read from cache
         cache = self.inside_cache.get((symbol, start, end))
         if cache is not None:
-            # self.logger.info(f"Inside for {self.pcfg.get_word_for_id(symbol)} "
-            #                  f"from {start} to {end} is {cache} [CACHE]")
             return cache
 
         # Base case
@@ -121,8 +99,6 @@ class InsideOutsideCalculator:
             score = self.probability_inverse(entry.rule[-1]) if entry else 0.0
             self.inside_cache[(symbol, start, end)] = score
 
-            # self.logger.info(f"Inside for {self.pcfg.get_word_for_id(symbol)} "
-            #                  f"from {start} to {end} is {score}")
             return score
 
         # Induction
@@ -138,8 +114,6 @@ class InsideOutsideCalculator:
 
         self.inside_cache[(symbol, start, end)] = score
 
-        # self.logger.info(f"Inside for {self.pcfg.get_word_for_id(symbol)} "
-        #                  f"from {start} to {end} is {score}")
         return score
 
 
