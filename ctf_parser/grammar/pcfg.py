@@ -83,6 +83,11 @@ class PCFG:
         self.id_to_lhs = [[]]
         self.rhs_to_lhs_cache = {}
 
+        # Precompute rule structures for inside/outside calculation
+        self.lhs_to_rhs = defaultdict(list)
+        self.rhs1_to_rule = defaultdict(list)
+        self.rhs2_to_rule = defaultdict(list)
+
         self.non_terminals = set()
         self.terminals = set()
 
@@ -107,6 +112,10 @@ class PCFG:
             self.non_terminals.add(rhs[0])
             self.non_terminals.add(rhs[1])
             item = (lhs, rhs[0], rhs[1], math.log(prob))
+
+            self.lhs_to_rhs[lhs].append(item)
+            self.rhs1_to_rule[rhs[0]].append(item)
+            self.rhs2_to_rule[rhs[1]].append(item)
 
             lhs_id = self.rhs_to_lhs_cache.get(tuple(rhs))
             if lhs_id is None:

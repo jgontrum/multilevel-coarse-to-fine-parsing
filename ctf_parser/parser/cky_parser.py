@@ -15,17 +15,28 @@ class CKYParser:
         self.tokenizer = PennTreebankTokenizer()
         self.logger = logging.getLogger('CtF Parser')
 
+    def parse_best(self, sentence):
+        words = self.tokenizer.tokenize(sentence)
+        norm_words = []
+
+        for word in words:
+            norm_words.append((self.pcfg.norm_word(word), word))
+        chart = self.cky(norm_words)
+
+        tree = self.backtrace(chart[0][-1][self.pcfg.start_symbol], chart)
+
+        tree[0] = tree[0].split("|")[0]
+
+        return tree, chart
+
     def parse(self, sentence):
         words = self.tokenizer.tokenize(sentence)
         norm_words = []
 
         for word in words:
             norm_words.append((self.pcfg.norm_word(word), word))
-        tree = self.cky(norm_words)
 
-        tree[0] = tree[0].split("|")[0]
-
-        return tree
+        return self.cky(norm_words)
 
     def backtrace(self, item, chart):
         if item.terminal:
@@ -59,8 +70,9 @@ class CKYParser:
         # Code for adding the words to the chart
         for i, (norm, word) in enumerate(norm_words):
             id_ = self.pcfg.get_id_for_word(norm)
-            for lhs, _, prob in self.pcfg.get_lhs_for_terminal_rule(id_):
-                item = CKYParser.ChartItem(lhs, prob, terminal=word,
+            for lhs, rhs, prob in self.pcfg.get_lhs_for_terminal_rule(id_):
+                item = CKYParser.ChartItem(lhs, prob, rule=(lhs, rhs, prob),
+                                           terminal=word,
                                            pcfg=self.pcfg)
                 existing_item = chart[i][i].get(lhs)
                 if not existing_item or \
@@ -84,6 +96,7 @@ class CKYParser:
                             item = CKYParser.ChartItem(lhs, probability,
                                                        (i, k, rhs_1),
                                                        (k + 1, j, rhs_2),
+                                                       rule=entry,
                                                        pcfg=self.pcfg)
                             chart[i][j][lhs] = item
 
@@ -93,7 +106,7 @@ class CKYParser:
         }
 
         self.logger.info(json.dumps(stats))
-        return self.backtrace(chart[0][-1][self.pcfg.start_symbol], chart)
+        return chart
 
     def __loop_based_lookup(self, first_nts, second_nts):
         second_symbols = second_nts.keys()
@@ -138,10 +151,11 @@ class CKYParser:
                 self.symbol = symbol
 
         def __init__(self, symbol, probability, bp_1=None, bp_2=None,
-                     terminal=None, pcfg=None):
+                     terminal=None, rule=None, pcfg=None):
             self.symbol = symbol
             self.probability = probability
             self.pcfg = pcfg
+            self.rule = rule
 
             self.backpointers = (
                 CKYParser.ChartItem.Backpointer(bp_1[0], bp_1[1], bp_1[2]),
@@ -151,7 +165,7 @@ class CKYParser:
             self.terminal = terminal
 
         def __repr__(self):
-            if pcfg:
+            if self.pcfg:
                 symbol = self.pcfg.get_word_for_id(self.symbol)
             else:
                 symbol = self.symbol
