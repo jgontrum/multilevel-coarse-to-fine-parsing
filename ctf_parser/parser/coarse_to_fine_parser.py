@@ -59,6 +59,7 @@ class CoarseToFineParser:
         :param sentence_probability: Probability of the previous sentence.
         :return:
         """
+        symbol_cache = {}
 
         def evaluate(item):
             """
@@ -78,14 +79,15 @@ class CoarseToFineParser:
 
             fine_symbol, start, end = item
 
-            # Look up the coarse version of the given fine symbol.
-            # TODO <precompute
-            coarse_symbol_as_string = replace_symbols(
-                fine_pcfg.get_word_for_id(fine_symbol), fine_to_coarse)
+            # Lazily create the coarse version of a symbol for a given fine one
+            coarse_symbol = symbol_cache.get(fine_symbol)
+            if coarse_symbol is None:
+                coarse_symbol_as_string = replace_symbols(
+                    fine_pcfg.get_word_for_id(fine_symbol), fine_to_coarse)
 
-            coarse_symbol = coarse_pcfg.get_id_for_word(
-                coarse_symbol_as_string)
-            # TODO />
+                coarse_symbol = coarse_pcfg.get_id_for_word(
+                    coarse_symbol_as_string)
+                symbol_cache[fine_symbol] = coarse_symbol
 
             if coarse_symbol is None:
                 self.logger.warning(f"No coarse symbol found for "

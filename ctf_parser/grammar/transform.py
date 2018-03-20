@@ -7,10 +7,11 @@ from ctf_parser import logger
 from ctf_parser.grammar.pcfg import PCFG
 from ctf_parser.parser.ctf_mapper import CtfMapper
 
+# TODO comments
 
 def replace_symbols(text, fine_to_coarse, unary_symbol="‡", binary_symbol="†"):
     """
-    
+
     :param text:
     :param fine_to_coarse:
     :param unary_symbol:
