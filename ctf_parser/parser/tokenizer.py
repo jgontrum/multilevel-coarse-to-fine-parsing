@@ -25,7 +25,6 @@ class PennTreebankTokenizer:
     - split off commas and single quotes, when followed by whitespace
     - separate periods that appear at the end of line
         
-        >>> from stat_parser.tokenizer import PennTreebankTokenizer
         >>> t = PennTreebankTokenizer()
         >>> s = '''Good muffins cost $3.88\\nin New York.  Please buy me\\ntwo of them.\\nThanks.'''
         >>> t.tokenize(s)

@@ -21,9 +21,6 @@ class InsideOutsideCalculator:
         self.probability_inverse = lambda x: math.pow(math.e, x)
         self.logger = logging.getLogger('CtF Parser')
 
-    def get_score_for_signature(self, signature):
-        pass
-
     def outside(self, symbol, start, end):
         """
         Calculate the outside score of the symbol for the given span.
@@ -40,7 +37,7 @@ class InsideOutsideCalculator:
 
         # Base case
         if start == 0 and end == len(self.chart) - 1:
-            if symbol == pcfg.start_symbol:
+            if symbol == self.pcfg.start_symbol:
                 score = 1
             else:
                 score = 0

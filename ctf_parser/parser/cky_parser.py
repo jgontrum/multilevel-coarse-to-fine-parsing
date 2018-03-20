@@ -8,35 +8,43 @@ from ctf_parser.grammar.pcfg import PCFG
 from ctf_parser.parser.tokenizer import PennTreebankTokenizer
 
 
+class NoParseFoundException(ValueError):
+    pass
+
+
 class CKYParser:
 
-    def __init__(self, pcfg):
+    def __init__(self, pcfg, evaluation_function=None):
+        self.logger = logging.getLogger('CtF Parser')
         self.pcfg = pcfg
         self.tokenizer = PennTreebankTokenizer()
-        self.logger = logging.getLogger('CtF Parser')
+        if evaluation_function is None:
+            self.evaluation_function = lambda _: True
+        else:
+            self.evaluation_function = evaluation_function
 
     def parse_best(self, sentence):
-        words = self.tokenizer.tokenize(sentence)
-        norm_words = []
+        chart = self.parse(sentence)
+        return self.get_best_from_chart(chart)
 
-        for word in words:
-            norm_words.append((self.pcfg.norm_word(word), word))
-        chart = self.cky(norm_words)
-
-        tree = self.backtrace(chart[0][-1][self.pcfg.start_symbol], chart)
+    def get_best_from_chart(self, chart):
+        try:
+            tree = self.backtrace(chart[0][-1][self.pcfg.start_symbol], chart)
+        except KeyError:
+            raise NoParseFoundException
 
         tree[0] = tree[0].split("|")[0]
 
         return tree, chart
 
-    def parse(self, sentence):
+    def parse(self, sentence, log_dict=None):
         words = self.tokenizer.tokenize(sentence)
         norm_words = []
 
         for word in words:
             norm_words.append((self.pcfg.norm_word(word), word))
 
-        return self.cky(norm_words)
+        return self.cky(norm_words, log_dict)
 
     def backtrace(self, item, chart):
         if item.terminal:
@@ -49,7 +57,7 @@ class CKYParser:
         rhs_1, rhs_2 = item.backpointers
 
         return [
-            pcfg.get_word_for_id(item.symbol),
+            self.pcfg.get_word_for_id(item.symbol),
             self.backtrace(
                 chart[rhs_1.i][rhs_1.j][rhs_1.symbol],
                 chart
@@ -60,8 +68,17 @@ class CKYParser:
             )
         ]
 
-    def cky(self, norm_words):
+    def cky(self, norm_words, log_dict=None):
+        # Set up variables for detailed logging
         t0 = time()
+        stats = {
+            "items_entered": 0,
+            "items_pruned": 0
+        }
+
+        if log_dict:
+            log_dict.update(stats)
+            stats = log_dict
 
         # Initialize your charts (for scores and backpointers)
         size = len(norm_words)
@@ -98,14 +115,19 @@ class CKYParser:
                                                        (k + 1, j, rhs_2),
                                                        rule=entry,
                                                        pcfg=self.pcfg)
-                            chart[i][j][lhs] = item
 
-        stats = {
+                            # Decide whether to prune or not!
+                            if self.evaluation_function((lhs, i, j)):
+                                chart[i][j][lhs] = item
+                                stats['items_entered'] += 1
+                            else:
+                                stats['items_pruned'] += 1
+
+        stats.update({
             "time": time() - t0,
             "length": len(norm_words)
-        }
+        })
 
-        self.logger.info(json.dumps(stats))
         return chart
 
     def __loop_based_lookup(self, first_nts, second_nts):
@@ -139,9 +161,10 @@ class CKYParser:
             r = [i]
             for cell in row:
                 r.append(
-                    {self.pcfg.get_word_for_id(k): v for k, v in cell.items()})
+                    sorted([self.pcfg.get_word_for_id(k) for k in cell.keys()]))
             table.add_row(r)
-        print(table)
+
+        return str(table)
 
     class ChartItem(object):
         class Backpointer(object):

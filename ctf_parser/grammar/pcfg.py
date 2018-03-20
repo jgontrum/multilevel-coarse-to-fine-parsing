@@ -1,3 +1,4 @@
+import logging
 import math
 from collections import defaultdict
 from json import loads
@@ -18,6 +19,7 @@ class PCFG:
 
     def __init__(self, start_symbol="S"):
         # '0' is reserved for the sparse matrix.
+        self.logger = logging.getLogger(__name__)
         self.word_to_id = {"DUMMY": 0}
         self.id_to_word = ["DUMMY"]
 

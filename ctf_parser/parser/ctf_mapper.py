@@ -12,6 +12,8 @@ class CtfMapper(object):
 
         self._add_level(mapping, 0)
 
+        self.levels = max(self.coarse_to_fine.keys())
+
     def _add_level(self, mapping, level):
         for key, values in mapping.items():
             if type(values) != str:

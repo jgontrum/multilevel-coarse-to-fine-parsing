@@ -9,21 +9,23 @@ from ctf_parser.grammar.pcfg import PCFG
 from ctf_parser.parser.ctf_mapper import CtfMapper
 
 
+def replace_symbols(text, fine_to_coarse):
+    unary_split = text.split("‡")
+    unaries_replaced = []
+    for unary in unary_split:
+        binarize_split = unary.split("†")
+        binaries_replaced = []
+        for binary in binarize_split:
+            binaries_replaced.append(fine_to_coarse.get(binary, binary))
+        unaries_replaced.append("†".join(binaries_replaced))
+    ret = "‡".join(unaries_replaced)
+    return ret
+
+
 def transform(pcfg, mapping, level=2):
     fine_to_coarse = mapping.fine_to_coarse[level]
     symbol = pcfg.get_word_for_id
 
-    def replace_symbols(text):
-        unary_split = text.split("‡")
-        unaries_replaced = []
-        for unary in unary_split:
-            binarize_split = unary.split("†")
-            binaries_replaced = []
-            for binary in binarize_split:
-                binaries_replaced.append(fine_to_coarse.get(binary, binary))
-            unaries_replaced.append("†".join(binaries_replaced))
-        ret = "‡".join(unaries_replaced)
-        return ret
     """
     Replace Symbols:
     
@@ -38,10 +40,10 @@ def transform(pcfg, mapping, level=2):
             if len(rule) == 4:
                 lhs, rhs1, rhs2, prob = rule
 
-                lhs_t = replace_symbols(symbol(lhs))
+                lhs_t = replace_symbols(symbol(lhs), fine_to_coarse)
 
-                rhs1_t = replace_symbols(symbol(rhs1))
-                rhs2_t = replace_symbols(symbol(rhs2))
+                rhs1_t = replace_symbols(symbol(rhs1), fine_to_coarse)
+                rhs2_t = replace_symbols(symbol(rhs2), fine_to_coarse)
                 prob_t = math.pow(math.e, prob)
 
                 transformed_rules[lhs_t].append((lhs_t, rhs1_t, rhs2_t, prob_t))
@@ -54,8 +56,8 @@ def transform(pcfg, mapping, level=2):
             elif len(rule) == 3:
                 lhs, rhs1, prob = rule
 
-                lhs_t = replace_symbols(symbol(lhs))
-                rhs1_t = replace_symbols(symbol(rhs1))
+                lhs_t = replace_symbols(symbol(lhs), fine_to_coarse)
+                rhs1_t = replace_symbols(symbol(rhs1), fine_to_coarse)
                 prob_t = math.pow(math.e, prob)
 
                 transformed_rules[lhs_t].append((lhs_t, rhs1_t, prob_t))
@@ -109,9 +111,18 @@ def transform(pcfg, mapping, level=2):
     return final_rules
 
 
-def transform_to_new_grammar(pcfg, mapping, level=2, save=False,
+def transform_to_new_grammar(pcfg, mapping, level=2, save=True, read=False,
                              prefix="grammar"):
     new_pcfg = PCFG()
+
+    if read:
+        try:
+            new_pcfg.load_model(
+                [json.loads(l) for l in open(f"{prefix}_{level}.pcfg")])
+            return new_pcfg
+        except FileNotFoundError:
+            pass
+
     new_grammar = transform(pcfg, mapping, level)
     new_pcfg.load_model(new_grammar)
 
