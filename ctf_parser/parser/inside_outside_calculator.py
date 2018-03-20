@@ -36,9 +36,9 @@ class InsideOutsideCalculator:
         # Base case
         if start == 0 and end == self.input_length - 1:
             if symbol == self.pcfg.start_symbol:
-                score = 1
+                score = 1.0
             else:
-                score = 0
+                score = 0.0
             self.outside_cache[(symbol, start, end)] = score
             return score
 
