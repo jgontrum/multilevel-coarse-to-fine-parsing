@@ -185,7 +185,7 @@ class CoarseToFineParser:
         overall_statistics['time'] = time.time() - t0
         self.logger.warning(json.dumps(overall_statistics, sort_keys=True))
 
-        return parser.get_best_from_chart(fine_chart)
+        return fine_chart
 
 
 if __name__ == '__main__':
