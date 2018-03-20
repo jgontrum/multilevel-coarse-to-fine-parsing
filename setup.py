@@ -10,7 +10,8 @@ setup(
     license='MPL 2.0',
     entry_points={
           'console_scripts': [
-              'ctfparser = ctf_parser.scripts.parser:main',
+              'ctfparser = ctf_parser.scripts.parser:ctf',
+              'ckyparser = ctf_parser.scripts.parser:cky'
           ]
       }
 )

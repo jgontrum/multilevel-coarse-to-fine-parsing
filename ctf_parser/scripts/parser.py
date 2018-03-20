@@ -2,17 +2,18 @@ import argparse
 import hashlib
 import json
 import logging
+import time
 from sys import stdin, stderr
 
 import yaml
 
 from ctf_parser.grammar.pcfg import PCFG
-from ctf_parser.parser.cky_parser import NoParseFoundException
+from ctf_parser.parser.cky_parser import NoParseFoundException, CKYParser
 from ctf_parser.parser.coarse_to_fine_parser import CoarseToFineParser
 from ctf_parser.parser.ctf_mapper import CtfMapper
 
 
-def main():
+def ctf():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--grammar", help="Path to the grammar to be used.",
@@ -55,5 +56,42 @@ def main():
     for line in stdin:
         try:
             print(ctf.parse_best(line.strip()))
+        except NoParseFoundException:
+            print("[]")
+
+
+def cky():
+    parser = argparse.ArgumentParser(
+        "ckyparser", description="CKY Parser to compare the performance to the "
+                                 "coarse-to-fine parser.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("--grammar", help="Path to the grammar to be used.",
+                        type=str, required=False, default="data/grammar.pcfg")
+
+    parser.add_argument("--enable_logs",
+                        help="Enable logging to stdout and file.",
+                        dest='enable_logs', action='store_true',
+                        required=False, default=False)
+
+    args = parser.parse_args()
+    logger = logging.getLogger('CtF Parser')
+
+    if not args.enable_logs:
+        logger.setLevel(logging.ERROR)
+
+    print("Preparing parser...", file=stderr)
+
+    pcfg = PCFG()
+    pcfg.load_model([json.loads(l) for l in open(args.grammar)])
+
+    parser = CKYParser(pcfg)
+
+    print("Done! Please enter a sentence.\n", file=stderr)
+    for line in stdin:
+        try:
+            log = {"sentence": line.strip(), "timestamp": time.time()}
+            tree = parser.parse_best(line.strip(), log)
+            print(tree)
+            logger.info(json.dumps(log, sort_keys=True))
         except NoParseFoundException:
             print("[]")

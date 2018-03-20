@@ -183,16 +183,6 @@ class CoarseToFineParser:
             self.logger.info(json.dumps(log_statistics, sort_keys=True))
 
         overall_statistics['time'] = time.time() - t0
-        self.logger.warning(json.dumps(overall_statistics, sort_keys=True))
+        self.logger.info(json.dumps(overall_statistics, sort_keys=True))
 
         return fine_chart
-
-
-if __name__ == '__main__':
-    pcfg = PCFG()
-    pcfg.load_model([json.loads(l) for l in open("grammar.pcfg")])
-    mapping = CtfMapper(yaml.load(open("data/ctf_mapping.yml")))
-
-    ctf = CoarseToFineParser(pcfg, mapping, prefix="grammar_test")
-
-    print(ctf.parse("This is a very long and complicated test."))
