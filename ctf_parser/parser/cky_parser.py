@@ -35,7 +35,7 @@ class CKYParser:
 
         tree[0] = tree[0].split("|")[0]
 
-        return tree, chart
+        return tree
 
     def parse(self, sentence, log_dict=None):
         words = self.tokenizer.tokenize(sentence)
@@ -150,8 +150,8 @@ class CKYParser:
                 for lhs, _, _, prob in self.pcfg.get_lhs(rhs_1.symbol,
                                                          rhs_2.symbol):
                     probability = rhs_1.probability
-                    probability += rhs_2.probability
-                    probability += prob
+                    probability *= rhs_2.probability
+                    probability *= prob
 
                     yield lhs, rhs_1.symbol, rhs_2.symbol, probability
 

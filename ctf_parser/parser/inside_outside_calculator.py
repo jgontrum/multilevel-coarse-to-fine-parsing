@@ -17,8 +17,7 @@ class InsideOutsideCalculator:
 
         self.pcfg = pcfg
         self.chart = chart
-        self.probability_transform = lambda x: math.log(x)
-        self.probability_inverse = lambda x: math.pow(math.e, x)
+        self.input_length = len(chart)
         self.logger = logging.getLogger('CtF Parser')
 
     def outside(self, symbol, start, end):
@@ -36,24 +35,24 @@ class InsideOutsideCalculator:
             return cache
 
         # Base case
-        if start == 0 and end == len(self.chart) - 1:
+        if start == 0 and end == self.input_length - 1:
             if symbol == self.pcfg.start_symbol:
                 score = 1
             else:
                 score = 0
-            self.inside_cache[(symbol, start, end)] = score
+            self.outside_cache[(symbol, start, end)] = score
             return score
 
         # Inductive case
         score = 0.0
 
         # Right
-        for e in range(end + 1, len(self.chart)):
+        for e in range(end + 1, self.input_length):
             for rule in self.pcfg.rhs1_to_rule.get(symbol, []):
                 lhs = rule[0]
                 rhs_2 = rule[2]
 
-                rule_prob = self.probability_inverse(rule[3])
+                rule_prob = rule[3]
 
                 outside = self.outside(lhs, start, e)
                 inside = self.inside(rhs_2, end + 1, e)
@@ -65,7 +64,7 @@ class InsideOutsideCalculator:
                 lhs = rule[0]
                 rhs_1 = rule[1]
 
-                rule_prob = self.probability_inverse(rule[3])
+                rule_prob = rule[3]
 
                 outside = self.outside(lhs, e, end)
                 inside = self.inside(rhs_1, e, start - 1)
@@ -93,7 +92,7 @@ class InsideOutsideCalculator:
         if start == end:
             cell = self.chart[start][end]
             entry = cell.get(symbol)
-            score = self.probability_inverse(entry.rule[-1]) if entry else 0.0
+            score = entry.rule[-1] if entry else 0.0
             self.inside_cache[(symbol, start, end)] = score
 
             return score
@@ -104,7 +103,7 @@ class InsideOutsideCalculator:
             for rule in self.pcfg.lhs_to_rhs.get(symbol, []):
                 rhs_1 = rule[1]
                 rhs_2 = rule[2]
-                prob = self.probability_inverse(rule[3])
+                prob = rule[3]
 
                 score += prob * self.inside(rhs_1, start, d) * self.inside(
                     rhs_2, d + 1, end)

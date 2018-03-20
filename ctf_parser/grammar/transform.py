@@ -1,5 +1,4 @@
 import json
-import math
 from collections import defaultdict
 
 import yaml
@@ -9,20 +8,35 @@ from ctf_parser.grammar.pcfg import PCFG
 from ctf_parser.parser.ctf_mapper import CtfMapper
 
 
-def replace_symbols(text, fine_to_coarse):
-    unary_split = text.split("‡")
+def replace_symbols(text, fine_to_coarse, unary_symbol="‡", binary_symbol="†"):
+    """
+    
+    :param text:
+    :param fine_to_coarse:
+    :param unary_symbol:
+    :param binary_symbol:
+    :return:
+    """
+    unary_split = text.split(unary_symbol)
     unaries_replaced = []
     for unary in unary_split:
-        binarize_split = unary.split("†")
+        binarize_split = unary.split(binary_symbol)
         binaries_replaced = []
         for binary in binarize_split:
             binaries_replaced.append(fine_to_coarse.get(binary, binary))
-        unaries_replaced.append("†".join(binaries_replaced))
-    ret = "‡".join(unaries_replaced)
+        unaries_replaced.append(binary_symbol.join(binaries_replaced))
+    ret = unary_symbol.join(unaries_replaced)
     return ret
 
 
 def transform(pcfg, mapping, level=2):
+    """
+
+    :param pcfg:
+    :param mapping:
+    :param level:
+    :return:
+    """
     fine_to_coarse = mapping.fine_to_coarse[level]
     symbol = pcfg.get_word_for_id
 
@@ -44,28 +58,18 @@ def transform(pcfg, mapping, level=2):
 
                 rhs1_t = replace_symbols(symbol(rhs1), fine_to_coarse)
                 rhs2_t = replace_symbols(symbol(rhs2), fine_to_coarse)
-                prob_t = math.pow(math.e, prob)
+                prob_t = prob
 
                 transformed_rules[lhs_t].append((lhs_t, rhs1_t, rhs2_t, prob_t))
-
-                # logger.debug(
-                #     f"Replace rule: "
-                #     f"{symbol(lhs)} -> {symbol(rhs1)} {symbol(rhs2)} [{prob}] "
-                #     f"=> {lhs_t} -> {rhs1_t} {rhs2_t} [{prob_t}]")
 
             elif len(rule) == 3:
                 lhs, rhs1, prob = rule
 
                 lhs_t = replace_symbols(symbol(lhs), fine_to_coarse)
                 rhs1_t = replace_symbols(symbol(rhs1), fine_to_coarse)
-                prob_t = math.pow(math.e, prob)
+                prob_t = prob
 
                 transformed_rules[lhs_t].append((lhs_t, rhs1_t, prob_t))
-
-                # logger.debug(
-                #     f"Replace rule: "
-                #     f"{symbol(lhs)} -> {symbol(rhs1)} [{prob}] => "
-                #     f"{lhs_t} -> {rhs1_t} [{prob_t}]")
 
     """
     Normalize rules:
@@ -113,12 +117,26 @@ def transform(pcfg, mapping, level=2):
 
 def transform_to_new_grammar(pcfg, mapping, level=2, save=True, read=False,
                              prefix="grammar"):
+    """
+
+    :param pcfg:
+    :param mapping:
+    :param level:
+    :param save:
+    :param read:
+    :param prefix:
+    :return:
+    """
     new_pcfg = PCFG()
+    path = f"{prefix}_{level}.pcfg"
 
     if read:
         try:
             new_pcfg.load_model(
-                [json.loads(l) for l in open(f"{prefix}_{level}.pcfg")])
+                [json.loads(l) for l in open(path)])
+            logger.info(f"Read grammar from file (\"{path}\")"
+                        f" (level {level})...")
+
             return new_pcfg
         except FileNotFoundError:
             pass
@@ -127,8 +145,8 @@ def transform_to_new_grammar(pcfg, mapping, level=2, save=True, read=False,
     new_pcfg.load_model(new_grammar)
 
     if save:
-        with open(f"{prefix}_{level}.pcfg", "w") as f:
-            logger.info(f"Write to file (level {level})...")
+        with open(path, "w") as f:
+            logger.info(f"Write to file (\"{path}\") (level {level})...")
             for l in new_grammar:
                 f.write(json.dumps(l) + "\n")
 

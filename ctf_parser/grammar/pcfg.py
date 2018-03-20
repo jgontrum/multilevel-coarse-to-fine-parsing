@@ -1,7 +1,5 @@
 import logging
-import math
 from collections import defaultdict
-from json import loads
 
 import numpy as np
 from scipy.sparse import dok_matrix
@@ -113,7 +111,7 @@ class PCFG:
 
             self.non_terminals.add(rhs[0])
             self.non_terminals.add(rhs[1])
-            item = (lhs, rhs[0], rhs[1], math.log(prob))
+            item = (lhs, rhs[0], rhs[1], prob)
 
             self.lhs_to_rhs[lhs].append(item)
             self.rhs1_to_rule[rhs[0]].append(item)
@@ -145,7 +143,7 @@ class PCFG:
             rhs = [self.__add_to_signature(sym) for sym in rhs_raw]
 
             self.terminals.add(rhs[0])
-            item = (lhs, rhs[0], math.log(prob))
+            item = (lhs, rhs[0], prob)
 
             lhs_id = self.rhs_to_lhs_cache.get(tuple(rhs))
             if lhs_id is None:
