@@ -1,5 +1,4 @@
 import logging
-import math
 
 from ctf_parser.grammar.pcfg import PCFG
 from ctf_parser.parser.cky_parser import CKYParser

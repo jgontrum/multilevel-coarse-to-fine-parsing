@@ -23,8 +23,8 @@ class CKYParser:
         else:
             self.evaluation_function = evaluation_function
 
-    def parse_best(self, sentence):
-        chart = self.parse(sentence)
+    def parse_best(self, sentence, log_dict=None):
+        chart = self.parse(sentence, log_dict)
         return self.get_best_from_chart(chart)
 
     def get_best_from_chart(self, chart):
@@ -69,6 +69,12 @@ class CKYParser:
         ]
 
     def cky(self, norm_words, log_dict=None):
+        """
+        Implementation of the CKY parsing algorithm.
+        :param norm_words: List of strings
+        :param log_dict: Write statistics into this dictionary
+        :return: Chart
+        """
         # Set up variables for detailed logging
         t0 = time()
         stats = {

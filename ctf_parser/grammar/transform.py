@@ -1,21 +1,19 @@
 import json
 from collections import defaultdict
 
-import yaml
-
 from ctf_parser import logger
 from ctf_parser.grammar.pcfg import PCFG
-from ctf_parser.parser.ctf_mapper import CtfMapper
 
-# TODO comments
 
 def replace_symbols(text, fine_to_coarse, unary_symbol="‡", binary_symbol="†"):
     """
-
-    :param text:
-    :param fine_to_coarse:
-    :param unary_symbol:
-    :param binary_symbol:
+    Splits a symbol and replaces all occurences with their coarse counterpart.
+    This is needed because through binarization, many symbols consist of a
+    sequence of other symbols.
+    :param text: The symbol string
+    :param fine_to_coarse: Maps fine symbols to a coarse symbol
+    :param unary_symbol: Character used to separate symbols froma unary chain rule
+    :param binary_symbol: Character used to separate symbols from rules with an arity > 2
     :return:
     """
     unary_split = text.split(unary_symbol)
@@ -32,11 +30,11 @@ def replace_symbols(text, fine_to_coarse, unary_symbol="‡", binary_symbol="†
 
 def transform(pcfg, mapping, level=2):
     """
-
-    :param pcfg:
-    :param mapping:
-    :param level:
-    :return:
+    Transforms all symbols in all rules in the given PCFG to coarse ones.
+    :param pcfg: The fine grammar.
+    :param mapping: Coarse-to-Fine symbol mapping
+    :param level: The current level
+    :return: A raw coarse grammar
     """
     fine_to_coarse = mapping.fine_to_coarse[level]
     symbol = pcfg.get_word_for_id
@@ -119,13 +117,14 @@ def transform(pcfg, mapping, level=2):
 def transform_to_new_grammar(pcfg, mapping, level=2, save=True, read=False,
                              prefix="grammar"):
     """
-
-    :param pcfg:
-    :param mapping:
-    :param level:
-    :param save:
-    :param read:
-    :param prefix:
+    Wrapper for the transform() function. Transforms a grammar and returns
+    a PCFG object. Can also read/write the resulting grammar to file for speedup.
+    :param pcfg: The fine grammar
+    :param mapping: Coarse to fine mapping object
+    :param level: The desired level of granularity
+    :param save: Should the output grammar saved to a file?
+    :param read: Read the grammar from file instead if it exists
+    :param prefix: Prefix for the file to read/write from or to
     :return:
     """
     new_pcfg = PCFG()
@@ -152,13 +151,3 @@ def transform_to_new_grammar(pcfg, mapping, level=2, save=True, read=False,
                 f.write(json.dumps(l) + "\n")
 
     return new_pcfg
-
-
-if __name__ == '__main__':
-    pcfg = PCFG()
-    pcfg.load_model([json.loads(l) for l in open("grammar.pcfg")])
-    mapping = CtfMapper(yaml.load(open("data/ctf_mapping.yml")))
-
-    for i in range(2, -1, -1):
-        pcfg = transform_to_new_grammar(pcfg, mapping, i, save=True,
-                                        prefix="grammar")

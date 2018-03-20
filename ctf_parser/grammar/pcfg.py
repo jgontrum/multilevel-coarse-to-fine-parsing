@@ -7,6 +7,7 @@ from scipy.sparse import dok_matrix
 """
 Optimized PCFG class that stores binary rules in a numpy matrix and prepares
 datastructures to intersect the first and second symbols of the rules.
+This code is not very pretty or readable, sorry :(
 
 A detailed investigation of this procedure can be found here:
 https://github.com/jgontrum/cky-parser-optimization
@@ -16,7 +17,6 @@ https://github.com/jgontrum/cky-parser-optimization
 class PCFG:
 
     def __init__(self, start_symbol="S"):
-        # '0' is reserved for the sparse matrix.
         self.logger = logging.getLogger(__name__)
         self.word_to_id = {"DUMMY": 0}
         self.id_to_word = ["DUMMY"]
@@ -158,24 +158,3 @@ class PCFG:
         self.__add_to_signature("_RARE_")
 
         self.__build_caches()
-
-
-class PCFGRule:
-
-    # TODO use this
-    def __init__(self, lhs, rhs, probability=1.0, signature=None):
-        self.signature = lambda x: x if signature is None else signature
-        self.rhs = rhs
-        self.lhs = lhs
-        self.probability = probability
-
-    def get_string_rule(self):
-        return PCFGRule(
-            self.signature(self.lhs),
-            [self.signature(s) for s in self.rhs],
-            self.probability
-        )
-
-    def __repr__(self):
-        return f"{self.signature(self.lhs)} -> " \
-               f"{[self.signature(s) for s in self.rhs]} [{self.probability}]"

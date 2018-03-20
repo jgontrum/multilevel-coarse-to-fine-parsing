@@ -14,8 +14,8 @@ from ctf_parser.parser.inside_outside_calculator import InsideOutsideCalculator
 
 class CoarseToFineParser:
 
-    def __init__(self, pcfg, mapping, prefix="grammar"):
-        self.THRESHOLD = 0.0001
+    def __init__(self, pcfg, mapping, prefix="grammar", threshold=0.0001):
+        self.THRESHOLD = threshold
         self.logger = logging.getLogger('CtF Parser')
         self.mapping = mapping
         self.grammars = [pcfg]
@@ -42,7 +42,14 @@ class CoarseToFineParser:
         self.grammars.reverse()
 
     def parse_best(self, sentence):
-        pass
+        """
+        Returns the tree of the best parse for the sentence.
+        :param sentence: String
+        :return: Tree
+        """
+        chart = self.parse(sentence)
+        parser = CKYParser(self.grammars[-1])
+        return parser.get_best_from_chart(chart)
 
     def create_evaluation_function(self, fine_pcfg, coarse_pcfg,
                                    inside_outside_calculator, fine_to_coarse,
@@ -109,6 +116,11 @@ class CoarseToFineParser:
         return evaluate
 
     def parse(self, sentence):
+        """
+        Parses the input and returns the chart.
+        :param sentence: String
+        :return: Chart
+        """
         t0 = time.time()
         overall_statistics = {"threshold": self.THRESHOLD,
                               "input": sentence, "items_pruned": 0,
