@@ -16,7 +16,7 @@ def main():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("--grammar", help="Path to the grammar to be used.",
-                        type=str, required=True)
+                        type=str, required=False, default="data/grammar.pcfg")
     parser.add_argument("--ctfmapping",
                         help="Path to the coarse-to-fine symbol mapping file.",
                         type=str, required=False,
