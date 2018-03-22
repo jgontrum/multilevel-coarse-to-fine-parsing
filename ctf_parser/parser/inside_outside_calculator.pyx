@@ -19,19 +19,42 @@ class InsideOutsideCalculator:
         self.input_length = len(chart)
         self.logger = logging.getLogger('CtF Parser')
 
-    def outside(self, symbol, start, end):
+    def precompute(self):
+        self._inside(self.pcfg.start_symbol, 0, self.input_length - 1)
+
+
+    def outside(self, unsigned int symbol, size_t start,
+                size_t end):
         """
-        Calculate the outside score of the symbol for the given span.
+        Read the outside score of the symbol for the given span from cache.
         :param symbol: j
         :param start: p
         :param end: q
         :return:
         """
+        return self.outside_cache.get((symbol, start, end), 0.0)
 
-        # Try to read from cache
-        cache = self.outside_cache.get((symbol, start, end))
-        if cache is not None:
-            return cache
+    def inside(self, unsigned int symbol, size_t start,
+               size_t end):
+        """
+        Read the inside score of the symbol for the given span from cache.
+        :param symbol: j
+        :param start: p
+        :param end: q
+        :return:
+        """
+        return self.inside_cache.get((symbol, start, end))
+
+    def _outside(self, unsigned int symbol, size_t start,
+                 size_t end):
+        """
+        Calculate the outside score of the symbol for the given span and save
+        the result in a cache.
+        :param symbol: j
+        :param start: p
+        :param end: q
+        :return:
+        """
 
         # Base case
         if start == 0 and end == self.input_length - 1:
@@ -44,6 +67,15 @@ class InsideOutsideCalculator:
 
         # Inductive case
         score = 0.0
+
+        cdef unsigned int lhs
+        cdef unsigned int rhs_1
+        cdef unsigned int rhs_2
+        cdef float rule_prob
+        cdef float outside
+        cdef float inside
+
+        cdef size_t e
 
         # Right
         for e in range(end + 1, self.input_length):
@@ -73,7 +105,8 @@ class InsideOutsideCalculator:
 
         return score
 
-    def inside(self, symbol, start, end):
+    def _inside(self, unsigned int symbol, size_t start,
+                size_t end):
         """
         Calculate the inside score of the symbol for the given span.
         :param symbol: j
@@ -81,11 +114,6 @@ class InsideOutsideCalculator:
         :param end: q
         :return:
         """
-
-        # Try to read from cache
-        cache = self.inside_cache.get((symbol, start, end))
-        if cache is not None:
-            return cache
 
         # Base case
         if start == end:
@@ -97,14 +125,21 @@ class InsideOutsideCalculator:
             return score
 
         # Induction
+        # cdef float score <- This breaks the code for whatever reason.
+        cdef unsigned int rhs_1
+        cdef unsigned int rhs_2
+        cdef float prob
+        cdef size_t d
+
         score = 0.0
+
         for d in range(start, end):
             for rule in self.pcfg.lhs_to_rhs.get(symbol, []):
                 rhs_1 = rule[1]
                 rhs_2 = rule[2]
                 prob = rule[3]
 
-                score += prob * self.inside(rhs_1, start, d) * self.inside(
+                score += prob * self._inside(rhs_1, start, d) * self._inside(
                     rhs_2, d + 1, end)
 
         self.inside_cache[(symbol, start, end)] = score

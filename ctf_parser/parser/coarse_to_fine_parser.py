@@ -170,8 +170,14 @@ class CoarseToFineParser:
                     fine_chart, fine_pcfg)
 
                 # Also pre-compute the sentence probability.
+                t3 = time.time()
+
+                inside_outside_calculator.precompute()
+
                 sentence_probability = inside_outside_calculator.inside(
                     fine_pcfg.start_symbol, 0, len(fine_chart) - 1)
+
+                self.logger.info(f"INSIDE: {time.time() - t3}")
 
                 log_statistics['sentence_probability'] = sentence_probability
                 if sentence_probability == 0.0:
