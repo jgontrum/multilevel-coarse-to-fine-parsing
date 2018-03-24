@@ -16,6 +16,7 @@ env/bin/python:
 	env/bin/pip install $(PIPOPTIONS) wheel
 	env/bin/pip install $(PIPOPTIONS) -r requirements.txt
 	env/bin/python setup.py develop
+	env/bin/python setup.py build_ext --inplace
 
 clean:
 	rm -rfv bin develop-eggs dist downloads eggs env parts
