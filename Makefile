@@ -1,4 +1,4 @@
-.PHONY: all clean test parse
+.PHONY: all clean
 
 TAG=$(shell git symbolic-ref -q --short HEAD)
 PIPOPTIONS=--default-timeout=100
@@ -25,9 +25,3 @@ clean:
 	find . -name '*.pyo' -exec rm -fv {} \;
 	find . -depth -name '*.egg-info' -exec rm -rfv {} \;
 	find . -depth -name '__pycache__' -exec rm -rfv {} \;
-
-test:
-	env/bin/py.test tests -vvrw
-
-parse: data/dev.parsed
-
