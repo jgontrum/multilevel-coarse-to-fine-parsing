@@ -2,20 +2,15 @@ import json
 import logging
 import time
 
-import yaml
-
-from ctf_parser.grammar.pcfg import PCFG
 from ctf_parser.grammar.transform import transform_to_new_grammar, \
     replace_symbols
 from ctf_parser.parser.cky_parser import CKYParser, NoParseFoundException
-from ctf_parser.parser.ctf_mapper import CtfMapper
 from ctf_parser.parser.inside_outside_calculator import InsideOutsideCalculator
 
 
 class CoarseToFineParser:
 
-    def __init__(self, pcfg, mapping, prefix="grammar", threshold=0.0001):
-        self.THRESHOLD = threshold
+    def __init__(self, pcfg, mapping, prefix="grammar", threshold=None):
         self.logger = logging.getLogger('CtF Parser')
         self.mapping = mapping
         self.grammars = [pcfg]
@@ -41,6 +36,14 @@ class CoarseToFineParser:
 
         self.grammars.reverse()
 
+        if threshold is None:
+            self.thresholds = [0.0001 for _ in self.grammars]
+        elif isinstance(threshold, list):
+            assert len(threshold) == len(self.grammars)
+            self.thresholds = threshold
+        else:
+            self.thresholds = [threshold for _ in self.grammars]
+
     def parse_best(self, sentence):
         """
         Returns the tree of the best parse for the sentence.
@@ -53,7 +56,7 @@ class CoarseToFineParser:
 
     def create_evaluation_function(self, fine_pcfg, coarse_pcfg,
                                    inside_outside_calculator, fine_to_coarse,
-                                   sentence_probability):
+                                   sentence_probability, threshold):
         """
         Defines the evaluation function used to decide if an item will be
         pruned or not.
@@ -98,7 +101,7 @@ class CoarseToFineParser:
 
             if coarse_symbol is None:
                 self.logger.warning(f"No coarse symbol found for "
-                                    f"{pcfg.get_word_for_id(fine_symbol)}")
+                                    f"{fine_symbol}.")
                 return True
 
             # Calculate inside and outside scores for the coarse symbol
@@ -111,7 +114,7 @@ class CoarseToFineParser:
 
             score = inside * outside / sentence_probability
 
-            return score > self.THRESHOLD
+            return score > threshold
 
         return evaluate
 
@@ -122,7 +125,7 @@ class CoarseToFineParser:
         :return: Chart
         """
         t0 = time.time()
-        overall_statistics = {"threshold": self.THRESHOLD,
+        overall_statistics = {"thresholds": self.thresholds,
                               "input": sentence, "items_pruned": 0,
                               "items_entered": 0, "type": "summary",
                               "timestamp": t0}
@@ -137,6 +140,7 @@ class CoarseToFineParser:
         for i in range(0, len(self.grammars)):
             t1 = time.time()
             fine_to_coarse = self.mapping.fine_to_coarse[i - 1]
+            threshold = self.thresholds[i]
 
             coarse_pcfg = fine_pcfg
             fine_pcfg = self.grammars[i]
@@ -146,12 +150,12 @@ class CoarseToFineParser:
             # every item to be entered into the chart.
             evaluate = self.create_evaluation_function(
                 fine_pcfg, coarse_pcfg, inside_outside_calculator,
-                fine_to_coarse, sentence_probability)
+                fine_to_coarse, sentence_probability, threshold)
 
             parser = CKYParser(fine_pcfg, evaluation_function=evaluate)
 
             # Parse the sentence with the current grammar.
-            log_statistics = {"level": i, "threshold": self.THRESHOLD,
+            log_statistics = {"level": i, "threshold": threshold,
                               "input": sentence, "type": "level",
                               "timestamp": t1}
             fine_chart = parser.parse(sentence, log_dict=log_statistics)
